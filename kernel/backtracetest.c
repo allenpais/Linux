@@ -23,13 +23,13 @@ static void backtrace_test_normal(void)
 
 static DECLARE_COMPLETION(backtrace_work);
 
-static void backtrace_test_irq_callback(unsigned long data)
+static void backtrace_test_irq_callback(struct tasklet_struct *t)
 {
 	dump_stack();
 	complete(&backtrace_work);
 }
 
-static DECLARE_TASKLET(backtrace_tasklet, &backtrace_test_irq_callback, 0);
+static DECLARE_TASKLET(backtrace_tasklet, &backtrace_test_irq_callback);
 
 static void backtrace_test_irq(void)
 {
