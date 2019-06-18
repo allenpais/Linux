@@ -594,16 +594,17 @@ struct tasklet_struct
 	struct tasklet_struct *next;
 	unsigned long state;
 	atomic_t count;
-	void (*func)(unsigned long);
-	unsigned long data;
+	void (*func)(struct tasklet_struct *);
 };
 
-#define DECLARE_TASKLET(name, func, data) \
-struct tasklet_struct name = { NULL, 0, ATOMIC_INIT(0), func, data }
+#define DECLARE_TASKLET(name, func) \
+struct tasklet_struct name = { NULL, 0, ATOMIC_INIT(0), func }
 
-#define DECLARE_TASKLET_DISABLED(name, func, data) \
-struct tasklet_struct name = { NULL, 0, ATOMIC_INIT(1), func, data }
+#define DECLARE_TASKLET_DISABLED(name, func) \
+struct tasklet_struct name = { NULL, 0, ATOMIC_INIT(1), func }
 
+#define from_tasklet(var, callback_tasklet, tasklet_fieldname) \
+	container_of(callback_tasklet, typeof(*var), tasklet_fieldname)
 
 enum
 {
@@ -671,7 +672,7 @@ static inline void tasklet_enable(struct tasklet_struct *t)
 extern void tasklet_kill(struct tasklet_struct *t);
 extern void tasklet_kill_immediate(struct tasklet_struct *t, unsigned int cpu);
 extern void tasklet_init(struct tasklet_struct *t,
-			 void (*func)(unsigned long), unsigned long data);
+			 void (*func)(struct tasklet_struct *));
 
 /*
  * Autoprobing for irqs:

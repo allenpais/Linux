@@ -520,7 +520,7 @@ static void tasklet_action_common(struct softirq_action *a,
 				if (!test_and_clear_bit(TASKLET_STATE_SCHED,
 							&t->state))
 					BUG();
-				t->func(t->data);
+				t->func(t);
 				tasklet_unlock(t);
 				continue;
 			}
@@ -547,13 +547,12 @@ static __latent_entropy void tasklet_hi_action(struct softirq_action *a)
 }
 
 void tasklet_init(struct tasklet_struct *t,
-		  void (*func)(unsigned long), unsigned long data)
+		  void (*func)(struct tasklet_struct *))
 {
 	t->next = NULL;
 	t->state = 0;
 	atomic_set(&t->count, 0);
 	t->func = func;
-	t->data = data;
 }
 EXPORT_SYMBOL(tasklet_init);
 
