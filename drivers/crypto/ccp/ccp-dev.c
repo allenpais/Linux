@@ -44,6 +44,7 @@ MODULE_PARM_DESC(max_devs, "Maximum number of CCPs to enable (default: all; 0 di
 struct ccp_tasklet_data {
 	struct completion completion;
 	struct ccp_cmd *cmd;
+	struct tasklet_struct tasklet;
 };
 
 /* Human-readable error strings */
@@ -416,9 +417,9 @@ static struct ccp_cmd *ccp_dequeue_cmd(struct ccp_cmd_queue *cmd_q)
 	return cmd;
 }
 
-static void ccp_do_cmd_complete(unsigned long data)
+static void ccp_do_cmd_complete(struct tasklet_struct *t)
 {
-	struct ccp_tasklet_data *tdata = (struct ccp_tasklet_data *)data;
+	struct ccp_tasklet_data *tdata = from_tasklet(tdata, t, tasklet);
 	struct ccp_cmd *cmd = tdata->cmd;
 
 	cmd->callback(cmd->data, cmd->ret);
@@ -436,9 +437,8 @@ int ccp_cmd_queue_thread(void *data)
 	struct ccp_cmd_queue *cmd_q = (struct ccp_cmd_queue *)data;
 	struct ccp_cmd *cmd;
 	struct ccp_tasklet_data tdata;
-	struct tasklet_struct tasklet;
 
-	tasklet_init(&tasklet, ccp_do_cmd_complete, (unsigned long)&tdata);
+	tasklet_setup(&tdata.tasklet, ccp_do_cmd_complete);
 
 	set_current_state(TASK_INTERRUPTIBLE);
 	while (!kthread_should_stop()) {
@@ -458,7 +458,7 @@ int ccp_cmd_queue_thread(void *data)
 		/* Schedule the completion callback */
 		tdata.cmd = cmd;
 		init_completion(&tdata.completion);
-		tasklet_schedule(&tasklet);
+		tasklet_schedule(&tdata.tasklet);
 		wait_for_completion(&tdata.completion);
 	}
 
