@@ -612,11 +612,16 @@ struct tasklet_struct
 	unsigned long data;
 };
 
+#define TASKLET_DATA_TYPE		unsigned long
+#define TASKLET_FUNC_TYPE		void (*)(TASKLET_DATA_TYPE)
+
 #define DECLARE_TASKLET(name, func, data) \
-struct tasklet_struct name = { NULL, 0, ATOMIC_INIT(0), func, data }
+struct tasklet_struct name = { NULL, 0, ATOMIC_INIT(0), \
+	(TASKLET_FUNC_TYPE)func, (TASKLET_DATA_TYPE)data }
 
 #define DECLARE_TASKLET_DISABLED(name, func, data) \
-struct tasklet_struct name = { NULL, 0, ATOMIC_INIT(1), func, data }
+struct tasklet_struct name = { NULL, 0, ATOMIC_INIT(1), \
+	(TASKLET_FUNC_TYPE)func, (TASKLET_DATA_TYPE)data }
 
 
 enum
@@ -686,6 +691,16 @@ extern void tasklet_kill(struct tasklet_struct *t);
 extern void tasklet_kill_immediate(struct tasklet_struct *t, unsigned int cpu);
 extern void tasklet_init(struct tasklet_struct *t,
 			 void (*func)(unsigned long), unsigned long data);
+
+
+#define from_tasklet(var, callback_tasklet, tasklet_fieldname) \
+	container_of(callback_tasklet, typeof(*var), tasklet_fieldname)
+
+static inline void tasklet_setup(struct tasklet_struct *t,
+				 void (*callback)(struct tasklet_struct *))
+{
+	tasklet_init(t, (TASKLET_FUNC_TYPE)callback, (TASKLET_DATA_TYPE)t);
+}
 
 /*
  * Autoprobing for irqs:
