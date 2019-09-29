@@ -239,6 +239,7 @@ struct sched {
 	unsigned int	num;		/* num skbs in per port queues */
 	struct sched_port p[MAX_NPORTS];
 	struct tasklet_struct sched_tsk;/* tasklet used to run scheduler */
+	struct sge *sge;
 };
 static void restart_sched(unsigned long);
 
@@ -379,6 +380,7 @@ static int tx_sched_init(struct sge *sge)
 
 	pr_debug("tx_sched_init\n");
 	tasklet_init(&s->sched_tsk, restart_sched, (unsigned long) sge);
+	s->sge = sge;
 	sge->tx_sched = s;
 
 	for (i = 0; i < MAX_NPORTS; i++) {
