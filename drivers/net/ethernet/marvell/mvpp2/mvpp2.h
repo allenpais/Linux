@@ -835,6 +835,7 @@ struct mvpp2_port_pcpu {
 	struct hrtimer tx_done_timer;
 	struct net_device *dev;
 	bool timer_scheduled;
+	struct mvpp2_port *port;
 };
 
 struct mvpp2_queue_vector {

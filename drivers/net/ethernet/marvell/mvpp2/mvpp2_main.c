@@ -5403,6 +5403,7 @@ static int mvpp2_port_probe(struct platform_device *pdev,
 		err = -ENOMEM;
 		goto err_free_txq_pcpu;
 	}
+	port->pcpu->port = port;
 
 	if (!port->has_tx_irqs) {
 		for (thread = 0; thread < priv->nthreads; thread++) {
