@@ -233,9 +233,9 @@ fail:
 	return rc;
 }
 
-static void bnxt_qplib_service_nq(unsigned long data)
+static void bnxt_qplib_service_nq(struct tasklet_struct *t)
 {
-	struct bnxt_qplib_nq *nq = (struct bnxt_qplib_nq *)data;
+	struct bnxt_qplib_nq *nq = from_tasklet(nq, t, worker);
 	struct bnxt_qplib_hwq *hwq = &nq->hwq;
 	struct nq_base *nqe, **nq_ptr;
 	struct bnxt_qplib_cq *cq;
@@ -387,8 +387,7 @@ int bnxt_qplib_nq_start_irq(struct bnxt_qplib_nq *nq, int nq_indx,
 
 	nq->vector = msix_vector;
 	if (need_init)
-		tasklet_init(&nq->worker, bnxt_qplib_service_nq,
-			     (unsigned long)nq);
+		tasklet_init(&nq->worker, bnxt_qplib_service_nq);
 	else
 		tasklet_enable(&nq->worker);
 

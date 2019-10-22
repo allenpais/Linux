@@ -50,7 +50,7 @@
 #include "qplib_sp.h"
 #include "qplib_fp.h"
 
-static void bnxt_qplib_service_creq(unsigned long data);
+static void bnxt_qplib_service_creq(struct tasklet_struct *);
 
 /* Hardware communication channel */
 static int __wait_for_resp(struct bnxt_qplib_rcfw *rcfw, u16 cookie)
@@ -75,7 +75,7 @@ static int __block_for_resp(struct bnxt_qplib_rcfw *rcfw, u16 cookie)
 		goto done;
 	do {
 		mdelay(1); /* 1m sec */
-		bnxt_qplib_service_creq((unsigned long)rcfw);
+		bnxt_qplib_service_creq(&rcfw->worker);
 	} while (test_bit(cbit, rcfw->cmdq_bitmap) && --count);
 done:
 	return count ? 0 : -ETIMEDOUT;
@@ -362,9 +362,9 @@ static int bnxt_qplib_process_qp_event(struct bnxt_qplib_rcfw *rcfw,
 }
 
 /* SP - CREQ Completion handlers */
-static void bnxt_qplib_service_creq(unsigned long data)
+static void bnxt_qplib_service_creq(struct tasklet_struct *t)
 {
-	struct bnxt_qplib_rcfw *rcfw = (struct bnxt_qplib_rcfw *)data;
+	struct bnxt_qplib_rcfw *rcfw = from_tasklet(rcfw, t, worker);
 	bool gen_p5 = bnxt_qplib_is_chip_gen_p5(rcfw->res->cctx);
 	struct bnxt_qplib_hwq *creq = &rcfw->creq;
 	u32 type, budget = CREQ_ENTRY_POLL_BUDGET;
@@ -672,7 +672,7 @@ int bnxt_qplib_rcfw_start_irq(struct bnxt_qplib_rcfw *rcfw, int msix_vector,
 	rcfw->vector = msix_vector;
 	if (need_init)
 		tasklet_init(&rcfw->worker,
-			     bnxt_qplib_service_creq, (unsigned long)rcfw);
+			     bnxt_qplib_service_creq);
 	else
 		tasklet_enable(&rcfw->worker);
 	rc = request_irq(rcfw->vector, bnxt_qplib_creq_irq, 0,
