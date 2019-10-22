@@ -97,7 +97,7 @@ int hv_synic_alloc(void)
 		hv_cpu = per_cpu_ptr(hv_context.cpu_context, cpu);
 
 		tasklet_init(&hv_cpu->msg_dpc,
-			     vmbus_on_msg_dpc, (unsigned long) hv_cpu);
+			     vmbus_on_msg_dpc);
 
 		hv_cpu->synic_message_page =
 			(void *)get_zeroed_page(GFP_ATOMIC);

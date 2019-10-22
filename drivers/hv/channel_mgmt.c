@@ -322,7 +322,7 @@ static struct vmbus_channel *alloc_channel(void)
 	INIT_LIST_HEAD(&channel->percpu_list);
 
 	tasklet_init(&channel->callback_event,
-		     vmbus_on_event, (unsigned long)channel);
+		     vmbus_on_event);
 
 	hv_ringbuffer_pre_init(channel);
 
