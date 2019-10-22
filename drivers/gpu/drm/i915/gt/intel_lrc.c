@@ -1627,9 +1627,9 @@ static void __execlists_submission_tasklet(struct intel_engine_cs *const engine)
  * Check the unread Context Status Buffers and manage the submission of new
  * contexts to the ELSP accordingly.
  */
-static void execlists_submission_tasklet(unsigned long data)
+static void execlists_submission_tasklet(struct tasklet_struct *t)
 {
-	struct intel_engine_cs * const engine = (struct intel_engine_cs *)data;
+	struct intel_engine_cs * const engine = from_tasklet(engine, t, execlists.tasklet);
 	unsigned long flags;
 
 	process_csb(engine);
@@ -2549,7 +2549,7 @@ static void execlists_reset(struct intel_engine_cs *engine, bool stalled)
 	spin_unlock_irqrestore(&engine->active.lock, flags);
 }
 
-static void nop_submission_tasklet(unsigned long data)
+static void nop_submission_tasklet(struct tasklet_struct *t)
 {
 	/* The driver is wedged; don't process any more events. */
 }
@@ -2643,7 +2643,7 @@ static void execlists_reset_finish(struct intel_engine_cs *engine)
 	 */
 	GEM_BUG_ON(!reset_in_progress(execlists));
 	if (!RB_EMPTY_ROOT(&execlists->queue.rb_root))
-		execlists->tasklet.func(execlists->tasklet.data);
+		execlists->tasklet.func(&execlists->tasklet);
 
 	if (__tasklet_enable(&execlists->tasklet))
 		/* And kick in case we missed a new request submission. */
@@ -3084,7 +3084,7 @@ static void rcs_submission_override(struct intel_engine_cs *engine)
 int intel_execlists_submission_setup(struct intel_engine_cs *engine)
 {
 	tasklet_init(&engine->execlists.tasklet,
-		     execlists_submission_tasklet, (unsigned long)engine);
+		     execlists_submission_tasklet);
 	timer_setup(&engine->execlists.timer, execlists_submission_timer, 0);
 
 	logical_ring_default_vfuncs(engine);
@@ -3537,9 +3537,9 @@ static intel_engine_mask_t virtual_submission_mask(struct virtual_engine *ve)
 	return mask;
 }
 
-static void virtual_submission_tasklet(unsigned long data)
+static void virtual_submission_tasklet(struct tasklet_struct *t)
 {
-	struct virtual_engine * const ve = (struct virtual_engine *)data;
+	struct virtual_engine * const ve = from_tasklet(ve, t, base.execlists.tasklet);
 	const int prio = ve->base.execlists.queue_priority_hint;
 	intel_engine_mask_t mask;
 	unsigned int n;
@@ -3750,8 +3750,7 @@ intel_execlists_create_virtual(struct i915_gem_context *ctx,
 	INIT_LIST_HEAD(virtual_queue(ve));
 	ve->base.execlists.queue_priority_hint = INT_MIN;
 	tasklet_init(&ve->base.execlists.tasklet,
-		     virtual_submission_tasklet,
-		     (unsigned long)ve);
+		     virtual_submission_tasklet);
 
 	intel_context_init(&ve->context, ctx, &ve->base);
 

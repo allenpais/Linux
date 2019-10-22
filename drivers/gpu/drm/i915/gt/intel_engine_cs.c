@@ -1057,7 +1057,7 @@ bool intel_engine_is_idle(struct intel_engine_cs *engine)
 		if (tasklet_trylock(t)) {
 			/* Must wait for any GPU reset in progress. */
 			if (__tasklet_is_enabled(t))
-				t->func(t->data);
+				t->func(t);
 			tasklet_unlock(t);
 		}
 		local_bh_enable();
