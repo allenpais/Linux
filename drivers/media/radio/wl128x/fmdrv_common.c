@@ -244,16 +244,15 @@ void fmc_update_region_info(struct fmdev *fmdev, u8 region_to_set)
  * FM common sub-module will schedule this tasklet whenever it receives
  * FM packet from ST driver.
  */
-static void recv_tasklet(unsigned long arg)
+static void recv_tasklet(struct tasklet_struct *t)
 {
-	struct fmdev *fmdev;
+	struct fmdev *fmdev = from_tasklet(fmdev, t, rx_task);
 	struct fm_irq *irq_info;
 	struct fm_event_msg_hdr *evt_hdr;
 	struct sk_buff *skb;
 	u8 num_fm_hci_cmds;
 	unsigned long flags;
 
-	fmdev = (struct fmdev *)arg;
 	irq_info = &fmdev->irq_info;
 	/* Process all packets in the RX queue */
 	while ((skb = skb_dequeue(&fmdev->rx_q))) {
@@ -328,13 +327,11 @@ static void recv_tasklet(unsigned long arg)
 }
 
 /* FM send tasklet: is scheduled when FM packet has to be sent to chip */
-static void send_tasklet(unsigned long arg)
+static void send_tasklet(struct tasklet_struct *t)
 {
-	struct fmdev *fmdev;
+	struct fmdev *fmdev = from_tasklet(fmdev, t, tx_task);
 	struct sk_buff *skb;
 	int len;
-
-	fmdev = (struct fmdev *)arg;
 
 	if (!atomic_read(&fmdev->tx_cnt))
 		return;
@@ -1535,11 +1532,11 @@ int fmc_prepare(struct fmdev *fmdev)
 
 	/* Initialize TX queue and TX tasklet */
 	skb_queue_head_init(&fmdev->tx_q);
-	tasklet_init(&fmdev->tx_task, send_tasklet, (unsigned long)fmdev);
+	tasklet_init(&fmdev->tx_task, send_tasklet);
 
 	/* Initialize RX Queue and RX tasklet */
 	skb_queue_head_init(&fmdev->rx_q);
-	tasklet_init(&fmdev->rx_task, recv_tasklet, (unsigned long)fmdev);
+	tasklet_init(&fmdev->rx_task, recv_tasklet);
 
 	fmdev->irq_info.stage = 0;
 	atomic_set(&fmdev->tx_cnt, 1);
