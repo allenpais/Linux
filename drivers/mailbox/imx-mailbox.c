@@ -97,9 +97,9 @@ static u32 imx_mu_xcr_rmw(struct imx_mu_priv *priv, u32 set, u32 clr)
 	return val;
 }
 
-static void imx_mu_txdb_tasklet(unsigned long data)
+static void imx_mu_txdb_tasklet(struct tasklet_struct *t)
 {
-	struct imx_mu_con_priv *cp = (struct imx_mu_con_priv *)data;
+	struct imx_mu_con_priv *cp = from_tasklet(cp, t, txdb_tasklet);
 
 	mbox_chan_txdone(cp->chan, 0);
 }
@@ -182,8 +182,7 @@ static int imx_mu_startup(struct mbox_chan *chan)
 
 	if (cp->type == IMX_MU_TYPE_TXDB) {
 		/* Tx doorbell don't have ACK support */
-		tasklet_init(&cp->txdb_tasklet, imx_mu_txdb_tasklet,
-			     (unsigned long)cp);
+		tasklet_init(&cp->txdb_tasklet, imx_mu_txdb_tasklet);
 		return 0;
 	}
 
