@@ -1214,9 +1214,10 @@ static void hso_std_serial_read_bulk_callback(struct urb *urb)
  * This needs to be a tasklet otherwise we will
  * end up recursively calling this function.
  */
-static void hso_unthrottle_tasklet(struct hso_serial *serial)
+static void hso_unthrottle_tasklet(struct tasklet_struct *t)
 {
 	unsigned long flags;
+	struct hso_serial *serial = from_tasklet(serial, t, unthrottle_tasklet);
 
 	spin_lock_irqsave(&serial->serial_lock, flags);
 	if ((serial->parent->port_spec & HSO_INTF_MUX))
@@ -1265,8 +1266,7 @@ static int hso_serial_open(struct tty_struct *tty, struct file *filp)
 		/* Force default termio settings */
 		_hso_serial_set_termios(tty, NULL);
 		tasklet_init(&serial->unthrottle_tasklet,
-			     (void (*)(unsigned long))hso_unthrottle_tasklet,
-			     (unsigned long)serial);
+			     hso_unthrottle_tasklet);
 		result = hso_start_serial_device(serial->parent, GFP_KERNEL);
 		if (result) {
 			hso_stop_serial_device(serial->parent);
