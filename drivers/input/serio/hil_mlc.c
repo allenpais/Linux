@@ -76,8 +76,8 @@ static DEFINE_RWLOCK(hil_mlcs_lock);
 static struct timer_list	hil_mlcs_kicker;
 static int			hil_mlcs_probe;
 
-static void hil_mlcs_process(unsigned long unused);
-static DECLARE_TASKLET_DISABLED(hil_mlcs_tasklet, hil_mlcs_process, 0);
+static void hil_mlcs_process(struct tasklet_struct *unused);
+static DECLARE_TASKLET_DISABLED(hil_mlcs_tasklet, hil_mlcs_process);
 
 
 /* #define HIL_MLC_DEBUG */
@@ -757,7 +757,7 @@ static int hilse_donode(hil_mlc *mlc)
 }
 
 /******************** tasklet context functions **************************/
-static void hil_mlcs_process(unsigned long unused)
+static void hil_mlcs_process(struct taskelt_struct *unused)
 {
 	struct list_head *tmp;
 
