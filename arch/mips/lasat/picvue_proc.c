@@ -30,7 +30,7 @@ static int scroll_dir, scroll_interval;
 
 static struct timer_list timer;
 
-static void pvc_display(unsigned long data)
+static void pvc_display(struct tasklet_struct *)
 {
 	int i;
 
@@ -39,7 +39,7 @@ static void pvc_display(unsigned long data)
 		pvc_write_string(pvc_lines[i], 0, i);
 }
 
-static DECLARE_TASKLET(pvc_display_tasklet, &pvc_display, 0);
+static DECLARE_TASKLET(pvc_display_tasklet, &pvc_display);
 
 static int pvc_line_proc_show(struct seq_file *m, void *v)
 {
