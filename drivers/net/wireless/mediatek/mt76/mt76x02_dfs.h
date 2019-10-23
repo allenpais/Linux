@@ -116,6 +116,7 @@ struct mt76x02_dfs_pattern_detector {
 	struct list_head sequences;
 	struct list_head seq_pool;
 	struct mt76x02_dfs_seq_stats seq_stats;
+	struct mt76x02_dev *dev;
 
 	unsigned long last_sw_check;
 	u32 last_event_ts;
