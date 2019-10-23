@@ -983,11 +983,9 @@ static const struct ieee80211_ops brcms_ops = {
 	.set_tim = brcms_ops_beacon_set_tim,
 };
 
-void brcms_dpc(unsigned long data)
+void brcms_dpc(struct tasklet_struct *t)
 {
-	struct brcms_info *wl;
-
-	wl = (struct brcms_info *) data;
+	struct brcms_info *wl = from_tasklet(wl, t, tasklet);
 
 	spin_lock_bh(&wl->lock);
 
@@ -1150,7 +1148,7 @@ static struct brcms_info *brcms_attach(struct bcma_device *pdev)
 	init_waitqueue_head(&wl->tx_flush_wq);
 
 	/* setup the bottom half handler */
-	tasklet_init(&wl->tasklet, brcms_dpc, (unsigned long) wl);
+	tasklet_init(&wl->tasklet, brcms_dpc);
 
 	spin_lock_init(&wl->lock);
 	spin_lock_init(&wl->isr_lock);
