@@ -341,9 +341,9 @@ static void adf_ring_response_handler(struct adf_etr_bank_data *bank)
 	}
 }
 
-void adf_response_handler(uintptr_t bank_addr)
+void adf_response_handler(struct tasklet_struct *t)
 {
-	struct adf_etr_bank_data *bank = (void *)bank_addr;
+	struct adf_etr_bank_data *bank = from_tasklet(bank, t, resp_handler);
 
 	/* Handle all the responses and reenable IRQs */
 	adf_ring_response_handler(bank);
