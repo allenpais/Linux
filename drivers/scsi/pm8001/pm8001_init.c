@@ -221,7 +221,7 @@ static irqreturn_t pm8001_interrupt_handler_msix(int irq, void *opaque)
 	if (!PM8001_CHIP_DISP->is_our_interrupt(pm8001_ha))
 		return IRQ_NONE;
 #ifdef PM8001_USE_TASKLET
-	tasklet_schedule(&pm8001_ha->tasklet[irq_vector->irq_id]);
+	tasklet_schedule(&pm8001_ha->tasklet[irq_vector->irq_id].tasklet);
 #else
 	ret = PM8001_CHIP_DISP->isr(pm8001_ha, irq_vector->irq_id);
 #endif
@@ -245,7 +245,7 @@ static irqreturn_t pm8001_interrupt_handler_intx(int irq, void *dev_id)
 		return IRQ_NONE;
 
 #ifdef PM8001_USE_TASKLET
-	tasklet_schedule(&pm8001_ha->tasklet[0]);
+	tasklet_schedule(&pm8001_ha->tasklet[0].tasklet);
 #else
 	ret = PM8001_CHIP_DISP->isr(pm8001_ha, 0);
 #endif
@@ -506,13 +506,18 @@ static struct pm8001_hba_info *pm8001_pci_alloc(struct pci_dev *pdev,
 #ifdef PM8001_USE_TASKLET
 	/* Tasklet for non msi-x interrupt handler */
 	if ((!pdev->msix_cap || !pci_msi_enabled())
-	    || (pm8001_ha->chip_id == chip_8001))
-		tasklet_init(&pm8001_ha->tasklet[0], pm8001_tasklet,
+	    || (pm8001_ha->chip_id == chip_8001)) {
+		pm8001_ha->tasklet[0].irq_id = 0;
+		tasklet_init(&pm8001_ha->tasklet[0].tasklet, pm8001_tasklet,
 			(unsigned long)&(pm8001_ha->irq_vector[0]));
-	else
-		for (j = 0; j < PM8001_MAX_MSIX_VEC; j++)
-			tasklet_init(&pm8001_ha->tasklet[j], pm8001_tasklet,
+	} else {
+		for (j = 0; j < PM8001_MAX_MSIX_VEC; j++) {
+			pm8001_ha->tasklet[j].irq_id = j;
+			tasklet_init(&pm8001_ha->tasklet[j].tasklet,
+				pm8001_tasklet,
 				(unsigned long)&(pm8001_ha->irq_vector[j]));
+		}
+	}
 #endif
 	pm8001_ioremap(pm8001_ha);
 	if (!pm8001_alloc(pm8001_ha, ent))
@@ -1162,10 +1167,10 @@ static void pm8001_pci_remove(struct pci_dev *pdev)
 	/* For non-msix and msix interrupts */
 	if ((!pdev->msix_cap || !pci_msi_enabled()) ||
 	    (pm8001_ha->chip_id == chip_8001))
-		tasklet_kill(&pm8001_ha->tasklet[0]);
+		tasklet_kill(&pm8001_ha->tasklet[0].tasklet);
 	else
 		for (j = 0; j < PM8001_MAX_MSIX_VEC; j++)
-			tasklet_kill(&pm8001_ha->tasklet[j]);
+			tasklet_kill(&pm8001_ha->tasklet[j].tasklet);
 #endif
 	scsi_host_put(pm8001_ha->shost);
 	pm8001_free(pm8001_ha);
@@ -1212,10 +1217,10 @@ static int pm8001_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 	/* For non-msix and msix interrupts */
 	if ((!pdev->msix_cap || !pci_msi_enabled()) ||
 	    (pm8001_ha->chip_id == chip_8001))
-		tasklet_kill(&pm8001_ha->tasklet[0]);
+		tasklet_kill(&pm8001_ha->tasklet[0].tasklet);
 	else
 		for (j = 0; j < PM8001_MAX_MSIX_VEC; j++)
-			tasklet_kill(&pm8001_ha->tasklet[j]);
+			tasklet_kill(&pm8001_ha->tasklet[j].tasklet);
 #endif
 	device_state = pci_choose_state(pdev, state);
 	pm8001_printk("pdev=0x%p, slot=%s, entering "
@@ -1281,13 +1286,18 @@ static int pm8001_pci_resume(struct pci_dev *pdev)
 #ifdef PM8001_USE_TASKLET
 	/*  Tasklet for non msi-x interrupt handler */
 	if ((!pdev->msix_cap || !pci_msi_enabled()) ||
-	    (pm8001_ha->chip_id == chip_8001))
-		tasklet_init(&pm8001_ha->tasklet[0], pm8001_tasklet,
+	    (pm8001_ha->chip_id == chip_8001)) {
+		pm8001_ha->tasklet[0].irq_id = 0;
+		tasklet_init(&pm8001_ha->tasklet[0].tasklet, pm8001_tasklet,
 			(unsigned long)&(pm8001_ha->irq_vector[0]));
-	else
-		for (j = 0; j < PM8001_MAX_MSIX_VEC; j++)
-			tasklet_init(&pm8001_ha->tasklet[j], pm8001_tasklet,
+	} else {
+		for (j = 0; j < PM8001_MAX_MSIX_VEC; j++) {
+			pm8001_ha->tasklet[j].irq_id = j;
+			tasklet_init(&pm8001_ha->tasklet[j].tasklet,
+				pm8001_tasklet,
 				(unsigned long)&(pm8001_ha->irq_vector[j]));
+		}
+	}
 #endif
 	PM8001_CHIP_DISP->interrupt_enable(pm8001_ha, 0);
 	if (pm8001_ha->chip_id != chip_8001) {
