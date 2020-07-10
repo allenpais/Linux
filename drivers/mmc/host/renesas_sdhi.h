@@ -48,6 +48,7 @@ struct tmio_mmc_dma {
 };
 
 struct renesas_sdhi {
+	struct platform_device *pdev;
 	struct clk *clk;
 	struct clk *clk_cd;
 	struct tmio_mmc_data mmc_data;
