@@ -218,9 +218,9 @@ force_pio:
 	renesas_sdhi_internal_dmac_enable_dma(host, false);
 }
 
-static void renesas_sdhi_internal_dmac_issue_tasklet_fn(unsigned long arg)
+static void renesas_sdhi_internal_dmac_issue_tasklet_fn(struct tasklet_struct *t)
 {
-	struct tmio_mmc_host *host = (struct tmio_mmc_host *)arg;
+	struct tmio_mmc_host *host = from_tasklet(host, t, dma_issue);
 
 	tmio_mmc_enable_mmc_irqs(host, TMIO_STAT_DATAEND);
 
@@ -229,9 +229,11 @@ static void renesas_sdhi_internal_dmac_issue_tasklet_fn(unsigned long arg)
 					    DTRAN_CTRL_DM_START);
 }
 
-static void renesas_sdhi_internal_dmac_complete_tasklet_fn(unsigned long arg)
+static void renesas_sdhi_internal_dmac_complete_tasklet_fn(struct tasklet_struct *t)
 {
-	struct tmio_mmc_host *host = (struct tmio_mmc_host *)arg;
+	struct renesas_sdhi *priv = from_tasklet(priv, t,
+						 dma_priv.dma_complete);
+	struct tmio_mmc_host *host = platform_get_drvdata(priv->pdev);
 	enum dma_data_direction dir;
 
 	spin_lock_irq(&host->lock);
@@ -270,12 +272,10 @@ renesas_sdhi_internal_dmac_request_dma(struct tmio_mmc_host *host,
 	/* Each value is set to non-zero to assume "enabling" each DMA */
 	host->chan_rx = host->chan_tx = (void *)0xdeadbeaf;
 
-	tasklet_init(&priv->dma_priv.dma_complete,
-		     renesas_sdhi_internal_dmac_complete_tasklet_fn,
-		     (unsigned long)host);
-	tasklet_init(&host->dma_issue,
-		     renesas_sdhi_internal_dmac_issue_tasklet_fn,
-		     (unsigned long)host);
+	tasklet_setup(&priv->dma_priv.dma_complete,
+		     renesas_sdhi_internal_dmac_complete_tasklet_fn);
+	tasklet_setup(&host->dma_issue,
+		     renesas_sdhi_internal_dmac_issue_tasklet_fn);
 }
 
 static void
