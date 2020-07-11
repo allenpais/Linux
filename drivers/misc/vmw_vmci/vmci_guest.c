@@ -205,9 +205,10 @@ static int vmci_check_host_caps(struct pci_dev *pdev)
  * This function assumes that it has exclusive access to the data
  * in port for the duration of the call.
  */
-static void vmci_dispatch_dgs(unsigned long data)
+static void vmci_dispatch_dgs(struct tasklet_struct *t)
 {
-	struct vmci_guest_device *vmci_dev = (struct vmci_guest_device *)data;
+	struct vmci_guest_device *vmci_dev = from_tasklet(vmci_dev, t,
+							  datagram_tasklet);
 	u8 *dg_in_buffer = vmci_dev->data_buffer;
 	struct vmci_datagram *dg;
 	size_t dg_in_buffer_size = VMCI_MAX_DG_SIZE;
@@ -352,9 +353,9 @@ static void vmci_dispatch_dgs(unsigned long data)
  * Scans the notification bitmap for raised flags, clears them
  * and handles the notifications.
  */
-static void vmci_process_bitmap(unsigned long data)
+static void vmci_process_bitmap(struct tasklet_struct *t)
 {
-	struct vmci_guest_device *dev = (struct vmci_guest_device *)data;
+	struct vmci_guest_device *dev = from_tasklet(dev, t, bm_tasklet);
 
 	if (!dev->notification_bitmap) {
 		dev_dbg(dev->dev, "No bitmap present in %s\n", __func__);
@@ -467,10 +468,8 @@ static int vmci_guest_probe_device(struct pci_dev *pdev,
 	vmci_dev->exclusive_vectors = false;
 	vmci_dev->iobase = iobase;
 
-	tasklet_init(&vmci_dev->datagram_tasklet,
-		     vmci_dispatch_dgs, (unsigned long)vmci_dev);
-	tasklet_init(&vmci_dev->bm_tasklet,
-		     vmci_process_bitmap, (unsigned long)vmci_dev);
+	tasklet_setup(&vmci_dev->datagram_tasklet, vmci_dispatch_dgs);
+	tasklet_setup(&vmci_dev->bm_tasklet, vmci_process_bitmap);
 
 	vmci_dev->data_buffer = vmalloc(VMCI_MAX_DG_SIZE);
 	if (!vmci_dev->data_buffer) {
