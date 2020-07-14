@@ -259,11 +259,9 @@ static void setup_queues(struct qdio_irq *irq_ptr,
 				    qdio_init->input_sbal_addr_array[i], i);
 
 		if (is_thinint_irq(irq_ptr)) {
-			tasklet_init(&q->tasklet, tiqdio_inbound_processing,
-				     (unsigned long) q);
+			tasklet_setup(&q->tasklet, tiqdio_inbound_processing);
 		} else {
-			tasklet_init(&q->tasklet, qdio_inbound_processing,
-				     (unsigned long) q);
+			tasklet_setup(&q->tasklet, qdio_inbound_processing);
 		}
 	}
 
@@ -278,8 +276,7 @@ static void setup_queues(struct qdio_irq *irq_ptr,
 		setup_storage_lists(q, irq_ptr,
 				    qdio_init->output_sbal_addr_array[i], i);
 
-		tasklet_init(&q->tasklet, qdio_outbound_processing,
-			     (unsigned long) q);
+		tasklet_setup(&q->tasklet, qdio_outbound_processing);
 		timer_setup(&q->u.out.timer, qdio_outbound_timer, 0);
 	}
 }

@@ -334,9 +334,9 @@ static inline void raw3215_try_io(struct raw3215_info *raw)
 /*
  * Call tty_wakeup from tasklet context
  */
-static void raw3215_wakeup(unsigned long data)
+static void raw3215_wakeup(struct tasklet_struct *t)
 {
-	struct raw3215_info *raw = (struct raw3215_info *) data;
+	struct raw3215_info *raw = from_tasklet(raw, t, tlet);
 	struct tty_struct *tty;
 
 	tty = tty_port_tty_get(&raw->port);
@@ -673,7 +673,7 @@ static struct raw3215_info *raw3215_alloc_info(void)
 
 	timer_setup(&info->timer, raw3215_timeout, 0);
 	init_waitqueue_head(&info->empty_wait);
-	tasklet_init(&info->tlet, raw3215_wakeup, (unsigned long)info);
+	tasklet_setup(&info->tlet, raw3215_wakeup);
 	tty_port_init(&info->port);
 
 	return info;
