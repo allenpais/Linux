@@ -1370,9 +1370,9 @@ static int set_up_next_transfer(struct pl022 *pl022,
  * @data: SSP driver private data structure
  *
  */
-static void pump_transfers(unsigned long data)
+static void pump_transfers(struct tasklet_struct *t)
 {
-	struct pl022 *pl022 = (struct pl022 *) data;
+	struct pl022 *pl022 = from_tasklet(pl022, t, pump_transfers);
 	struct spi_message *message = NULL;
 	struct spi_transfer *transfer = NULL;
 	struct spi_transfer *previous = NULL;
@@ -2238,8 +2238,7 @@ static int pl022_probe(struct amba_device *adev, const struct amba_id *id)
 	}
 
 	/* Initialize transfer pump */
-	tasklet_init(&pl022->pump_transfers, pump_transfers,
-		     (unsigned long)pl022);
+	tasklet_setup(&pl022->pump_transfers, pump_transfers);
 
 	/* Disable SSP */
 	writew((readw(SSP_CR1(pl022->virtbase)) & (~SSP_CR1_MASK_SSE)),
