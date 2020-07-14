@@ -870,11 +870,11 @@ static void mpc_action_go_ready(fsm_instance *fsm, int event, void *arg)
  * helper of ctcm_init_netdevice
  * CTCM_PROTO_MPC only
  */
-void mpc_group_ready(unsigned long adev)
+void mpc_group_ready(struct tasklet_struct *t)
 {
-	struct net_device *dev = (struct net_device *)adev;
-	struct ctcm_priv *priv = dev->ml_priv;
-	struct mpc_group *grp = priv->mpcg;
+	struct mpc_group *grp = from_tasklet(grp, t, mpc_tasklet2);
+	struct ctcm_priv *priv = container_of(grp, typeof(*priv), mpcg);
+	struct net_device *dev = container_of(priv, typeof(*dev), ml_priv);
 	struct channel *ch = NULL;
 
 	if (grp == NULL) {
@@ -1233,9 +1233,9 @@ done:
  * Throttling back channel can result in excessive
  * channel inactivity and system deact of channel
  */
-void ctcmpc_bh(unsigned long thischan)
+void ctcmpc_bh(struct tasklet_struct *t)
 {
-	struct channel	  *ch	= (struct channel *)thischan;
+	struct channel	  *ch	= from_tasklet(ch, t, ch_tasklet);
 	struct sk_buff	  *skb;
 	struct net_device *dev	= ch->netdev;
 	struct ctcm_priv  *priv	= dev->ml_priv;
@@ -1516,10 +1516,10 @@ void mpc_action_discontact(fsm_instance *fi, int event, void *arg)
  * CTCM_PROTO_MPC only
  * called from add_channel in ctcm_main.c
  */
-void mpc_action_send_discontact(unsigned long thischan)
+void mpc_action_send_discontact(struct tasklet_struct *t)
 {
 	int rc;
-	struct channel	*ch = (struct channel *)thischan;
+	struct channel	*ch = from_tasklet(ch, t, ch_disc_tasklet);
 	unsigned long	saveflags = 0;
 
 	spin_lock_irqsave(get_ccwdev_lock(ch->cdev), saveflags);

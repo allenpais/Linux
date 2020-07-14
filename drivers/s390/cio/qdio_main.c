@@ -667,9 +667,9 @@ static void __qdio_inbound_processing(struct qdio_q *q)
 	}
 }
 
-void qdio_inbound_processing(unsigned long data)
+void qdio_inbound_processing(struct tasklet_struct *t)
 {
-	struct qdio_q *q = (struct qdio_q *)data;
+	struct qdio_q *q = from_tasklet(q, t, tasklet);
 	__qdio_inbound_processing(q);
 }
 
@@ -834,9 +834,9 @@ sched:
 }
 
 /* outbound tasklet */
-void qdio_outbound_processing(unsigned long data)
+void qdio_outbound_processing(struct tasklet_struct *t)
 {
-	struct qdio_q *q = (struct qdio_q *)data;
+	struct qdio_q *q = from_tasklet(q, t, tasklet);
 	__qdio_outbound_processing(q);
 }
 
@@ -860,9 +860,9 @@ static inline void qdio_check_outbound_pci_queues(struct qdio_irq *irq)
 			qdio_tasklet_schedule(out);
 }
 
-void tiqdio_inbound_processing(unsigned long data)
+void tiqdio_inbound_processing(struct tasklet_struct *t)
 {
-	struct qdio_q *q = (struct qdio_q *)data;
+	struct qdio_q *q = from_tasklet(q, t, tasklet);
 
 	if (need_siga_sync(q) && need_siga_sync_after_ai(q))
 		qdio_sync_queues(q);
