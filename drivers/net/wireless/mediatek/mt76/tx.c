@@ -565,9 +565,9 @@ void mt76_txq_schedule_all(struct mt76_phy *phy)
 }
 EXPORT_SYMBOL_GPL(mt76_txq_schedule_all);
 
-void mt76_tx_tasklet(unsigned long data)
+void mt76_tx_tasklet(struct tasklet_struct *t)
 {
-	struct mt76_dev *dev = (struct mt76_dev *)data;
+	struct mt76_dev *dev = from_tasklet(dev, t, tx_tasklet);
 
 	mt76_txq_schedule_all(&dev->phy);
 	if (dev->phy2)
