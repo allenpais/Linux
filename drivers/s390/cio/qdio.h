@@ -366,14 +366,14 @@ int qdio_establish_thinint(struct qdio_irq *irq_ptr);
 void qdio_shutdown_thinint(struct qdio_irq *irq_ptr);
 void tiqdio_add_device(struct qdio_irq *irq_ptr);
 void tiqdio_remove_device(struct qdio_irq *irq_ptr);
-void tiqdio_inbound_processing(unsigned long q);
+void tiqdio_inbound_processing(struct tasklet_struct *t);
 int qdio_thinint_init(void);
 void qdio_thinint_exit(void);
 int test_nonshared_ind(struct qdio_irq *);
 
 /* prototypes for setup */
-void qdio_inbound_processing(unsigned long data);
-void qdio_outbound_processing(unsigned long data);
+void qdio_inbound_processing(struct tasklet_struct *t);
+void qdio_outbound_processing(struct tasklet_struct *t);
 void qdio_outbound_timer(struct timer_list *t);
 void qdio_int_handler(struct ccw_device *cdev, unsigned long intparm,
 		      struct irb *irb);
