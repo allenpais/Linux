@@ -4380,20 +4380,20 @@ static void pmcraid_worker_function(struct work_struct *workp)
  * Return Value
  *	None
  */
-static void pmcraid_tasklet_function(unsigned long instance)
+static void pmcraid_tasklet_function(struct tasklet_struct *t)
 {
-	struct pmcraid_isr_param *hrrq_vector;
-	struct pmcraid_instance *pinstance;
+	struct pmcraid_tsk_param *tsk_param = from_tasklet(tsk_param, t,
+							   tasklet);
+	int id = tsk_param->isr_tasklet_id;
+	struct pmcraid_instance *pinstance = container_of(tsk_param,
+							  typeof(*pinstance),
+							  isr_tasklet[id]);
 	unsigned long hrrq_lock_flags;
 	unsigned long pending_lock_flags;
 	unsigned long host_lock_flags;
 	spinlock_t *lockp; /* hrrq buffer lock */
-	int id;
 	u32 resp;
 
-	hrrq_vector = (struct pmcraid_isr_param *)instance;
-	pinstance = hrrq_vector->drv_inst;
-	id = hrrq_vector->hrrq_id;
 	lockp = &(pinstance->hrrq_lock[id]);
 
 	/* loop through each of the commands responded by IOA. Each HRRQ buf is
@@ -4884,9 +4884,8 @@ static void pmcraid_init_tasklets(struct pmcraid_instance *pinstance)
 	int i;
 	for (i = 0; i < pinstance->num_hrrq; i++) {
 		pinstance->isr_tasklet[i].isr_tasklet_id = i;
-		tasklet_init(&pinstance->isr_tasklet[i].tasklet,
-			     pmcraid_tasklet_function,
-			     (unsigned long)&pinstance->hrrq_vector[i]);
+		tasklet_setup(&pinstance->isr_tasklet[i].tasklet,
+			     pmcraid_tasklet_function);
 	}
 }
 
