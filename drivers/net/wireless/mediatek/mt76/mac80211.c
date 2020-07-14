@@ -430,7 +430,7 @@ mt76_alloc_device(struct device *pdev, unsigned int size,
 	for (i = 0; i < ARRAY_SIZE(dev->q_rx); i++)
 		skb_queue_head_init(&dev->rx_skb[i]);
 
-	tasklet_init(&dev->tx_tasklet, mt76_tx_tasklet, (unsigned long)dev);
+	tasklet_setup(&dev->tx_tasklet, mt76_tx_tasklet);
 
 	return dev;
 }
