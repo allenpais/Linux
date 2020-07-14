@@ -188,12 +188,15 @@ static void pm8001_free(struct pm8001_hba_info *pm8001_ha)
  * @opaque: the passed general host adapter struct
  * Note: pm8001_tasklet is common for pm8001 & pm80xx
  */
-static void pm8001_tasklet(unsigned long opaque)
+static void pm8001_tasklet(struct tasklet_struct *t)
 {
-	struct pm8001_hba_info *pm8001_ha;
+	struct tsk_param *tsk_param = from_tasklet(tsk_param, t, tasklet);
+	struct pm8001_hba_info *pm8001_ha = container_of(tsk_param,
+						typeof(*pm8001_ha),
+						tasklet[tsk_param->irq_id]);
 	struct isr_param *irq_vector;
 
-	irq_vector = (struct isr_param *)opaque;
+	irq_vector = &pm8001_ha->irq_vector[tsk_param->irq_id];
 	pm8001_ha = irq_vector->drv_inst;
 	if (unlikely(!pm8001_ha))
 		BUG_ON(1);
@@ -508,14 +511,12 @@ static struct pm8001_hba_info *pm8001_pci_alloc(struct pci_dev *pdev,
 	if ((!pdev->msix_cap || !pci_msi_enabled())
 	    || (pm8001_ha->chip_id == chip_8001)) {
 		pm8001_ha->tasklet[0].irq_id = 0;
-		tasklet_init(&pm8001_ha->tasklet[0].tasklet, pm8001_tasklet,
-			(unsigned long)&(pm8001_ha->irq_vector[0]));
+		tasklet_setup(&pm8001_ha->tasklet[0].tasklet, pm8001_tasklet);
 	} else {
 		for (j = 0; j < PM8001_MAX_MSIX_VEC; j++) {
 			pm8001_ha->tasklet[j].irq_id = j;
-			tasklet_init(&pm8001_ha->tasklet[j].tasklet,
-				pm8001_tasklet,
-				(unsigned long)&(pm8001_ha->irq_vector[j]));
+			tasklet_setup(&pm8001_ha->tasklet[j].tasklet,
+				pm8001_tasklet);
 		}
 	}
 #endif
@@ -1288,14 +1289,12 @@ static int pm8001_pci_resume(struct pci_dev *pdev)
 	if ((!pdev->msix_cap || !pci_msi_enabled()) ||
 	    (pm8001_ha->chip_id == chip_8001)) {
 		pm8001_ha->tasklet[0].irq_id = 0;
-		tasklet_init(&pm8001_ha->tasklet[0].tasklet, pm8001_tasklet,
-			(unsigned long)&(pm8001_ha->irq_vector[0]));
+		tasklet_setup(&pm8001_ha->tasklet[0].tasklet, pm8001_tasklet);
 	} else {
 		for (j = 0; j < PM8001_MAX_MSIX_VEC; j++) {
 			pm8001_ha->tasklet[j].irq_id = j;
-			tasklet_init(&pm8001_ha->tasklet[j].tasklet,
-				pm8001_tasklet,
-				(unsigned long)&(pm8001_ha->irq_vector[j]));
+			tasklet_setup(&pm8001_ha->tasklet[j].tasklet,
+				pm8001_tasklet);
 		}
 	}
 #endif
