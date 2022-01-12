@@ -78,7 +78,7 @@ static int module_sig_check(struct load_info *info, int flags)
 extern void kmemleak_load_module(const struct module *mod, const struct load_info *info);
 #else /* !CONFIG_DEBUG_KMEMLEAK */
 static inline void __maybe_unused kmemleak_load_module(const struct module *mod,
-						       const struct load_info *info) { }
+		const struct load_info *info) { }
 #endif /* CONFIG_DEBUG_KMEMLEAK */
 
 #ifdef CONFIG_KALLSYMS
@@ -91,13 +91,34 @@ extern void layout_symtab(struct module *mod, struct load_info *info);
 extern void add_kallsyms(struct module *mod, const struct load_info *info);
 extern bool sect_empty(const Elf_Shdr *sect);
 extern const char *find_kallsyms_symbol(struct module *mod, unsigned long addr,
-					unsigned long *size, unsigned long *offset);
+		unsigned long *size, unsigned long *offset);
 #else /* !CONFIG_KALLSYMS */
 static inline void layout_symtab(struct module *mod, struct load_info *info) { }
 static inline void add_kallsyms(struct module *mod, const struct load_info *info) { }
 static inline char *find_kallsyms_symbol(struct module *mod, unsigned long addr,
-					 unsigned long *size, unsigned long *offset)
+		unsigned long *size, unsigned long *offset)
 {
 	return NULL;
 }
 #endif /* CONFIG_KALLSYMS */
+
+#ifdef CONFIG_SYSFS
+extern int mod_sysfs_setup(struct module *mod, const struct load_info *info,
+		struct kernel_param *kparam, unsigned int num_params);
+extern void mod_sysfs_fini(struct module *mod);
+extern void module_remove_modinfo_attrs(struct module *mod, int end);
+extern void del_usage_links(struct module *mod);
+extern void init_param_lock(struct module *mod);
+#else /* !CONFIG_SYSFS */
+static int mod_sysfs_setup(struct module *mod,
+		const struct load_info *info,
+		struct kernel_param *kparam,
+		unsigned int num_params)
+{
+	return 0;
+}
+static inline void mod_sysfs_fini(struct module *mod) { }
+static inline void module_remove_modinfo_attrs(struct module *mod, int end) { }
+static inline void del_usage_links(struct module *mod) { }
+static inline void init_param_lock(struct module *mod) { }
+#endif /* CONFIG_SYSFS */
